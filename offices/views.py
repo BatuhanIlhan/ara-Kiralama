@@ -12,7 +12,7 @@ def index(request):
         office_list = Office.objects.all()
     context = []
     for office in office_list:
-        context.append({"ulke": office.ulke,"sehir":office.sehir,"adres":office.adres})
+        context.append({"ulke": office.country,"sehir":office.city,"adres":office.address})
 
     return JsonResponse(context, safe=False)
 
