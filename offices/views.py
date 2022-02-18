@@ -1,6 +1,6 @@
 import json
 
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 
 from offices.models import Office
@@ -19,28 +19,7 @@ def index(request):
         for office in office_list:
             context.append({"ulke": office.country, "sehir": office.city, "adres": office.address})
     elif request.method == "POST":
-        dic = json.loads(request.body)
-        if dic.get("id") is not None:
-            try:
-                office = Office.objects.get(id=dic["id"])
-                if dic.get("city") is not None:
-                    office.city = dic["city"]
-                if dic.get("country") is not None:
-                    office.country = dic["country"]
-                if dic.get("address") is not None:
-                    office.address = dic["address"]
-                office.save()
-                context = {"Office with id %s" % office.id: "Edited"}
-            except Office.DoesNotExist:
-                context = {"Office with id %s" % dic["id"]: "Does Not Exist"}
-
-        else:
-            new_office = Office(country=dic["country"],
-                                city=dic["city"],
-                                address=dic["address"]
-                                )
-            new_office.save()
-            context = {"Office with id %s" % new_office.id: "Created"}
+        return create_office(request)
     elif request.method == "DELETE":
         dic = json.loads(request.body)
         try:
@@ -50,6 +29,33 @@ def index(request):
         except Office.DoesNotExist:
             context = {"Office with id %s" % dic["id"]: "Does Not Exist"}
     else:
-        context = {}
+        return HttpResponse(status=405)
+
+    return JsonResponse(context, safe=False)
+
+
+def create_office(request):
+    dic = json.loads(request.body)
+    if dic.get("id") is not None:
+        try:
+            office = Office.objects.get(id=dic["id"])
+            if dic.get("city") is not None:
+                office.city = dic["city"]
+            if dic.get("country") is not None:
+                office.country = dic["country"]
+            if dic.get("address") is not None:
+                office.address = dic["address"]
+            office.save()
+            context = {"Office with id %s" % office.id: "Edited"}
+        except Office.DoesNotExist:
+            context = {"Office with id %s" % dic["id"]: "Does Not Exist"}
+
+    else:
+        new_office = Office(country=dic["country"],
+                            city=dic["city"],
+                            address=dic["address"]
+                            )
+        new_office.save()
+        context = {"Office with id %s" % new_office.id: "Created"}
 
     return JsonResponse(context, safe=False)

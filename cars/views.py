@@ -1,5 +1,5 @@
 import json
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from cars.models import Car, CarModel, CarBrand
 
@@ -9,15 +9,17 @@ from cars.models import Car, CarModel, CarBrand
 
 def index(request):
     if request.GET.get("id"):
-        cars_list = Car.objects.filter(pk=request.GET.get("id"))
+        if Car.objects.filter(pk=request.GET.get("id")).exists():
+            cars_list = Car.objects.filter(pk=request.GET.get("id"))
+        else:
+            return HttpResponse(status=404)
     else:
         cars_list = Car.objects.all()
     context = []
     for car in cars_list:
-        context.append({"name": car.model_id.name, "brand": car.model_id.brand_id.name, "yil": car.model_id.yil,
+        context.append({"name": car.model.name, "brand": car.model.brand.name, "yil": car.model.year,
                         "yakit tipi": car.fuel_type, "vites tipi": car.transmission_type,
-                        "koltuk sayisi": car.model_id.seat_count, "sinif": car.model_id.car_class})
-
+                        "koltuk sayisi": car.model.seat_count, "sinif": car.model.car_class})
     return JsonResponse(context, safe=False)
 
 
@@ -26,27 +28,38 @@ def delete_car(request):
     try:
         car = Car.objects.get(id=request.GET.get("id"))
         car.delete()
-        dic = {"Car with id %s" % car.id: "Deleted"}
+        dic = {"Car with id %s" % request.GET.get("id"): "Deleted"}
     except Car.DoesNotExist:
-        dic = {"Car with id %s" % request.GET.get("id"): "Does not exist"}
+        return HttpResponse(status=404)
     return JsonResponse(dic, safe=False)
 
 
 @csrf_exempt
 def create_car(request):
-    dic = json.loads(request.body)
-    new_car = Car(transmission_type=dic["transmission_type"],
-                  fuel_type=dic["fuel_type"],
-                  model_id=dic["model_id"],
-                  office_id=dic["office_id"]
-                  )
+    try:
+        dic = json.loads(request.body)
+    except json.JSONDecodeError:
+        return HttpResponse(status=400)
+    try:
+        new_car = Car(transmission_type=dic["transmission_type"],
+                      fuel_type=dic["fuel_type"],
+                      model_id=dic["model_id"],
+                      office_id=dic["office_id"]
+                      )
+    except :
+        return HttpResponse(status=400)
+
     new_car.save()
-    return JsonResponse({"Car with id %s" % new_car.id: "Created"}, safe=False)
+    return JsonResponse({"Car with id %s" % new_car.id: "Created"})
 
 
 @csrf_exempt
 def create_car_model(request):
-    dic = json.loads(request.body)
+    try:
+        dic = json.loads(request.body)
+    except json.JSONDecodeError:
+        return HttpResponse(status=400)
+
     new_car_model = CarModel(year=dic["year"],
                              name=dic["name"],
                              seat_count=dic["seat_count"],

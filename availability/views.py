@@ -51,14 +51,16 @@ def index(request):
     dropoff_date = datetime.strptime(request.GET.get("dropoffDate"), "%Y-%m-%d").date()
     dic = []
     for car in cars_of_the_office:
-        is_available = True
-        unavailability_list = Unavailability.objects.filter(car_id=car.id)
-        for unavailability in unavailability_list:
-            if pickup_date < unavailability.end_datetime:
-                if dropoff_date > unavailability.start_datetime:
-                    is_available = False
-                    break
-        if is_available:
+        is_unavailable = Unavailability.objects.filter(
+            car_id=car.id,
+            end_datetime__lte=pickup_date,
+            start_datetime__gte=pickup_date
+        ).filter(
+            end_datetime__lte=dropoff_date,
+            start_datetime__gte=dropoff_date
+        ).exists()
+
+        if not is_unavailable:
             dic.append({
                 "id": car.id,
                 "transmission_type": car.transmission_type,
@@ -68,4 +70,3 @@ def index(request):
             })
 
     return JsonResponse(dic, safe=False)
-
