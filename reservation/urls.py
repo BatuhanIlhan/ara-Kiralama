@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
 
+app_name = "reservation"
 urlpatterns = [
-    path("mkmk", views.index, name="making_reservation")
+    path("", views.index, name="making_reservation")
 ]

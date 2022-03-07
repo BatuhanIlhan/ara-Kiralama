@@ -4,6 +4,7 @@ from django.db import models
 from availability.models import Unavailability
 from cars.models import Car
 from offices.models import Office
+from user.models import User
 
 
 class Reservation(models.Model):
@@ -12,4 +13,4 @@ class Reservation(models.Model):
     pick_up_date = models.DateField()
     drop_off_date = models.DateField()
     unavailability = models.OneToOneField(Unavailability, on_delete=models.CASCADE)
-
+    user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True,null=True)

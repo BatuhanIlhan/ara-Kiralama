@@ -1,70 +1,55 @@
+from django.urls import reverse
+from model_bakery import baker
 from django.test import TestCase
-
+from cars.views import edit_car
 from cars.models import Car
 from .models import Unavailability
 from reservation.models import Reservation
-from datetime import datetime
+from datetime import date
 
 
 # Create your tests here.
 
-class QuestionModelTests(TestCase):
-    def test_unavailability_is_valid(self):
-        unavailability = Unavailability(
-            car_id=1, start_datetime=datetime.today().date(), end_datetime=datetime.today().date())
-        self.assertIs(unavailability.end_datetime > unavailability.start_datetime, True)
+class AvailabilityGetEndpointTests(TestCase):
+    def setUp(self):
+        self.office = baker.make("offices.Office")
+        self.car = baker.make("cars.car")
+        self.car.office_id = self.office.id
+        self.car.save()
+        self.unavailability_list = []
+        unavailability_one = Unavailability(
+            car_id=self.car.id,
+            start_datetime=date(2022, 3, 15),
+            end_datetime=date(2022, 3, 19)
+        )
+        unavailability_one.save()
+        unavailability_two = Unavailability(
+            car_id=self.car.id,
+            start_datetime=date(2022, 3, 9),
+            end_datetime=date(2022, 3, 11)
+        )
+        unavailability_two.save()
 
-# from http import HTTPStatus
-#
-# from django.test import TestCase
-# from django.urls import reverse
-#
-# from restaurant.models import Restaurant, MenuItem, Category
-#
-#
-# class RestaurantListViewTest(TestCase):
-#     fixtures = ['category', 'menu_item', 'restaurant']
-#     ENDPOINT = reverse('restaurant:list')
-#
-#     def test_list_restaurants(self):
-#         response = self.client.get(self.ENDPOINT)
-#         self.assertEqual(response.status_code, HTTPStatus.OK, msg='invalid response status code')
-#
-#         payload = response.json()
-#         self.assertIs(type(payload), list, msg='invalid payload type')
-#         self.assertEqual(len(payload), 1, msg=f'expected one restaurant item but got {len(payload)}')
-#
-#         for restaurant_data in payload:
-#             self.validate_restaurant(restaurant_data=restaurant_data)
-#
-#     def validate_restaurant(self, restaurant_data: dict):
-#         self.assertIs(type(restaurant_data), dict, msg='invalid restaurant data type')
-#         self._assert_fields(fields=['id', 'name', 'menu', 'created_at', 'modified_at'], data=restaurant_data)
-#
-#         restaurant = Restaurant.objects.get(id=restaurant_data['id'])
-#         self.assertEqual(restaurant.name, restaurant_data['name'])
-#
-#         menu_data = restaurant_data['menu']
-#         self.assertIsInstance(menu_data, list, msg='invalid restaurant menu data')
-#         self.assertEqual(restaurant.menu.count(), len(menu_data))
-#         for menu_item_data in menu_data:
-#             self.validate_menu_item(item_data=menu_item_data)
-#
-#     def validate_menu_item(self, item_data: dict):
-#         self.assertIs(type(item_data), dict, msg='invalid item data type')
-#         self._assert_fields(fields=['id', 'name', 'category', 'created_at', 'modified_at'], data=item_data)
-#
-#         menu_item = MenuItem.objects.get(id=item_data['id'])
-#         self.assertEqual(menu_item.name, item_data['name'])
-#         self.validate_category(category_data=item_data['category'])
-#
-#     def validate_category(self, category_data):
-#         self.assertIs(type(category_data), dict, msg='invalid category data type')
-#         self._assert_fields(fields=['id', 'name', 'created_at', 'modified_at'], data=category_data)
-#
-#         category = Category.objects.get(id=category_data['id'])
-#         self.assertEqual(category.name, category_data['name'])
-#
-#     def _assert_fields(self, fields, data: dict):
-#         for field in fields:
-#             self.assertIn(field, data, msg=f'expected data to have field: {field}')
+        pass
+
+    def test_retrieve_an_available_car(self):
+        response = self.client.get(reverse("availability:index"), {"officeId": self.office.id,
+                                                                   "pickupDate": "2022-3-12",
+                                                                   "dropoffDate": "2022-3-14"})
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(1, len(response.json()))
+        self.assertEqual(response.json(), [{
+            "id": self.car.id,
+            "transmission_type": self.car.transmission_type,
+            "fuel_type": self.car.fuel_type,
+            "model": self.car.model.name,
+            "brand": self.car.model.brand.name
+        }])
+
+    def test_retrieve_if_there_is_no_available_car(self):
+        response = self.client.get(reverse("availability:index"), {"officeId": self.office.id,
+                                                                   "pickupDate": "2022-3-11",
+                                                                   "dropoffDate": "2022-3-14"})
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(0, len(response.json()))
+        self.assertEqual(response.json(), [])

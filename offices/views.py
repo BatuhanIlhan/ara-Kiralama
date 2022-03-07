@@ -11,31 +11,20 @@ from offices.models import Office
 @csrf_exempt
 def index(request):
     if request.method == "GET":
-        if request.GET.get("id"):
-            office_list = Office.objects.filter(id=request.GET.get("id"))
-        else:
-            office_list = Office.objects.all()
-        context = []
-        for office in office_list:
-            context.append({"ulke": office.country, "sehir": office.city, "adres": office.address})
+        return get_office(request)
     elif request.method == "POST":
-        return create_office(request)
+        return create_or_edit_office(request)
     elif request.method == "DELETE":
-        dic = json.loads(request.body)
-        try:
-            office = Office.objects.get(id=dic["id"])
-            office.delete()
-            context = {"Office with id %s" % dic["id"]: "Deleted"}
-        except Office.DoesNotExist:
-            context = {"Office with id %s" % dic["id"]: "Does Not Exist"}
+        return delete_office(request)
     else:
         return HttpResponse(status=405)
 
-    return JsonResponse(context, safe=False)
 
-
-def create_office(request):
-    dic = json.loads(request.body)
+def create_or_edit_office(request):
+    try:
+        dic = json.loads(request.body)
+    except json.JSONDecodeError:
+        return HttpResponse(400)
     if dic.get("id") is not None:
         try:
             office = Office.objects.get(id=dic["id"])
@@ -45,6 +34,8 @@ def create_office(request):
                 office.country = dic["country"]
             if dic.get("address") is not None:
                 office.address = dic["address"]
+                getattr(office,"address")
+                setattr(office,"address",dic["address"])
             office.save()
             context = {"Office with id %s" % office.id: "Edited"}
         except Office.DoesNotExist:
@@ -59,3 +50,30 @@ def create_office(request):
         context = {"Office with id %s" % new_office.id: "Created"}
 
     return JsonResponse(context, safe=False)
+
+
+def get_office(request):
+    if request.GET.get("id"):
+        if Office.objects.filter(id=request.GET.get("id")).exists():
+            office_list = Office.objects.filter(id=request.GET.get("id"))
+            context = []
+            for office in office_list:
+                context.append({"ulke": office.country, "sehir": office.city, "adres": office.address})
+            return JsonResponse(context, safe=False)
+        else:
+            return HttpResponse(status=404)
+
+
+def delete_office(request):
+    try:
+        dic = json.loads(request.body)
+    except json.JSONDecodeError:
+        return HttpResponse(status=400)
+
+    try:
+        office = Office.objects.get(id=dic["id"])
+        office.delete()
+        context = {"Office with id %s" % dic["id"]: "Deleted"}
+        return JsonResponse(context, safe=False)
+    except Office.DoesNotExist:
+        return HttpResponse(status=404)

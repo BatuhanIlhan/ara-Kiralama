@@ -53,11 +53,9 @@ def index(request):
     for car in cars_of_the_office:
         is_unavailable = Unavailability.objects.filter(
             car_id=car.id,
-            end_datetime__lte=pickup_date,
-            start_datetime__gte=pickup_date
+            end_datetime__gte=pickup_date
         ).filter(
-            end_datetime__lte=dropoff_date,
-            start_datetime__gte=dropoff_date
+            start_datetime__lte=dropoff_date
         ).exists()
 
         if not is_unavailable:
