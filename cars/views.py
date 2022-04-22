@@ -1,9 +1,8 @@
 import json
-import datetime
 from django import forms
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
-from cars.models import Car, CarModel, CarBrand
+from cars.models import Car
 
 
 # Create your views here.
@@ -14,8 +13,15 @@ class CarForm(forms.ModelForm):
         fields = []
 
 
+class CarUpdateForm(forms.Form):
+    transmission_type = forms.CharField(max_length=50, required=False)
+    fuel_type = forms.CharField(max_length=50, required=False)
+    office = forms.IntegerField(required=False)
+    model = forms.IntegerField(required=False)
+
+
 @csrf_exempt
-def retrieving_car_by_id(request, car_id):
+def car_functions_with_id(request, car_id):
     if request.method == "GET":
         if Car.objects.filter(id=car_id).exists():
             car = Car.objects.get(id=car_id)
@@ -24,32 +30,34 @@ def retrieving_car_by_id(request, car_id):
                        "koltuk sayisi": car.model.seat_count, "sinif": car.model.car_class}
             return JsonResponse(context)
         else:
-            return HttpResponse(status=404)
+            return HttpResponse(content="Car with id %s does not exist" % car_id, status=404)
     elif request.method == "DELETE":
         if Car.objects.filter(id=car_id).exists():
             car = Car.objects.get(id=car_id)
             car.delete()
             return JsonResponse({"Car with id %s" % car_id: "Deleted"})
         else:
-            return HttpResponse(status=404)
+            return HttpResponse(content="Car with id %s does not exist" % car_id, status=404)
     elif request.method == "POST":
         try:
             request_body = json.loads(request.body)
         except json.JSONDecodeError:
-            return HttpResponse(content="JSONDecodeError",status=400)
-        car = Car.objects.get(id=car_id)
-        # edited_car_form = CarForm(instance=car)
-        # if not edited_car_form.is_valid():
-        #     return HttpResponse(content=dict(edited_car_form.errors.items()), status=400)
-        edited_car_form = CarForm(request_body, instance=car)
-        print(edited_car_form.data)
-        new = edited_car_form.save()
-        print(new.transmission_type)
-        return JsonResponse({"Car with id %s" % car.id: "Edited"})
+            return HttpResponse(content="JSONDecodeError", status=400)
+        if not Car.objects.filter(id=car_id).exists():
+            return HttpResponse(content="Car with id %s does not exist" % car_id, status=404)
+        form = CarUpdateForm(request_body)
+        if not form.is_valid():
+            return HttpResponse(content=dict(form.errors.items()), status=400)
+        n = {}
+        for key, value in form.cleaned_data.items():
+            if value:
+                n[key] = value
+        Car.objects.filter(id=car_id).update(**n)
+        return JsonResponse({"Car with id %s" % car_id: "Edited"})
 
 
 @csrf_exempt
-def retrieving_cars(request):
+def car_functions(request):
     if request.method == "GET":
         context = []
         for car in Car.objects.all():

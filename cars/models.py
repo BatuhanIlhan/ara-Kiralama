@@ -36,3 +36,4 @@ class Car(models.Model):
     fuel_type = models.CharField(max_length=50)
     model = models.ForeignKey(CarModel, on_delete=models.CASCADE)
     office = models.ForeignKey(Office, on_delete=models.CASCADE)
+

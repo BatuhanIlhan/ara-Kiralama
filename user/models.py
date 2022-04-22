@@ -1,13 +1,13 @@
 import datetime
 
 from django.core.exceptions import ValidationError
-from django.db import models
 
+from django.db import models
+from django.contrib.auth.models import AbstractUser
 # Create your models here.
 
 
 from cars.models import Car
-# from reservation.models import Reservation
 
 
 def phone_number_length_validator(value):
@@ -32,13 +32,9 @@ def identity_number_length_validator(value):
     return True
 
 
-class User(models.Model):
-    username = models.CharField(max_length=50, unique=True)
-    name = models.CharField(max_length=100)
-    surname = models.CharField(max_length=100)
-    identity_number = models.CharField(max_length=11,validators=[identity_number_length_validator])
+class User(AbstractUser):
+    identity_number = models.CharField(max_length=11, validators=[identity_number_length_validator])
     phone_number = models.CharField(max_length=10, validators=[phone_number_length_validator])
     date_of_birth = models.DateField(validators=[date_of_birth_validator])
-    email_address = models.EmailField()
-    password = models.CharField(max_length=50)
+    REQUIRED_FIELDS = [identity_number, phone_number, date_of_birth]
 

@@ -1,0 +1,390 @@
+swagger : "2.0"
+info :
+  version : 1.0.0
+  title : Car Rental Api
+  description: Rest api for car rental
+  contact:
+    name: Batuhan İlhan, Ensar Kovankaya, Kaan Sarıkaya
+    email: mbatuhanilhan@gmail.com
+  
+host: "127.0.0.1:8000"
+
+basePath: /
+
+schemes:
+  - http
+consumes:
+  - application/json
+produces:
+  - application/json
+
+
+tags:
+  - name: Car
+    description: Car Endpoints
+  - name: Availability
+    description: Availability Endpoints
+  
+
+paths:
+  /cars/:
+    get:
+      summary: Get list of all cars
+      tags:
+        - Car
+      responses:
+        200:
+          $ref: "#/responses/CarList"
+    post:
+      summary: Create a new car
+      tags: 
+        - Car
+      responses:
+        200:
+          $ref : "#/responses/CreateCar"
+        400:
+          $ref : "#/responses/BadRequest"
+  /cars/{car_id}:
+    get:
+      summary: Get the car with the specified id
+      tags:
+        - Car
+      parameters:
+        - name: car_id
+          in: path
+          type: integer
+          description: Car id
+          required : true
+      responses:
+        200:
+          $ref : "#/responses/Car"
+        404:
+          $ref : "#/responses/NotFound"
+    delete:
+      summary: Delete the car with the specified id
+      tags:
+        - Car
+      parameters:
+        - name: car_id
+          in: path
+          type: integer
+          description: Car id
+          required : true
+      responses:
+        200:
+          $ref : "#/responses/DeleteOperation"
+        404:  
+          $ref : "#/responses/NotFound"
+    post:  
+      summary : Update the car with the specified id
+      tags : 
+        - Car
+      parameters:
+        - name: car_id
+          in: path
+          type: integer
+          description: Car id
+          required : true
+
+      responses : 
+        200:
+          $ref : "#/responses/UpdateOperation"
+        400:
+          $ref : "#/responses/BadRequest"
+        404:
+          $ref : "#/responses/NotFound"
+          
+  /availability/:
+    get:
+      summary: Cars available according to the given pick up and drop off date
+      tags:
+        - Availability
+      parameters:
+        - name : pickupDate
+          in : query
+          type: string
+          format: date
+          required : true
+          description : date user want to pick-up the car. It should be written in that format "yyyy-mm-dd"  
+        - name: dropoffDate
+          in: query
+          type: string
+          required: true
+          format: date
+          description : date user want to drop-off the car. It should be written in that format "yyyy-mm-dd" 
+        - name: officeId
+          in : query
+          type: integer
+          required: true
+      responses:
+        200:
+          $ref : "#/responses/CarList"
+  /reservation/:
+    post:
+      summary: Make reservation
+      tags:
+        - Reservation
+      
+      parameters:
+        - name: Reservation Request
+          in: body
+          schema: 
+             $ref: "#/definitions/MakeReservationRequest"
+      
+      responses : 
+        200:
+          description: the reservation is done
+          schema:
+            type: string
+            example : {"reservationId": new_reservation.id}
+        400:
+          $ref : "#/responses/BadRequest"
+  /offices/:
+    get:
+      summary: Get the office with specified id
+      tags:
+        - Office
+      parameters:
+        - name: id
+          in: query
+          required: true
+          type: integer
+      responses:
+        200:
+          description: Office informations
+          schema: 
+            $ref: "#/definitions/Office"
+        404:
+           $ref : "#/responses/NotFound"
+        
+    post:
+      summary: create or edit office
+      description: if id exists in the parameters then it edits that office. Otherwise, creates.
+      tags:
+        - Office
+      parameters:
+        - in: body
+          name: Office Request Body
+          schema:
+            $ref : "#/definitions/OfficeRequest"
+      responses:
+        200:
+          description: asd
+          schema:
+            type: object
+            example: {"Office with id 7": "Edited/Created"}
+              
+        400:
+          $ref : "#/responses/BadRequest"
+        404:
+          $ref : "#/responses/NotFound"
+          
+    
+    delete:
+      summary: Delete office with specsified id
+      tags:
+        - Office
+      parameters:
+        - name: id
+          in: body
+          schema: 
+            type: object
+            properties:
+              id:
+                type: integer
+                example: 14
+            required:
+              - id
+      responses:
+        200:
+          description : deleted message
+          schema:
+            type: object
+            example: {"Office with id 7" : "Deleted"}
+        400:
+          $ref : "#/responses/BadRequest"
+        404:
+          $ref : "#/responses/NotFound"
+          
+            
+    
+          
+      
+        
+      
+      
+responses:
+    
+  UpdateOperation:
+    description: Object with specified id or username updated
+    schema:
+      type : string
+      example: {"Car with id 4": "Edited"}
+  DeleteOperation:
+    description: Object with specified id or username deleted
+    schema:
+      type: string
+      example : {"Car with id 4" : "Deleted"}
+  NotFound:
+    description: Object with specified id or username does not exist
+    schema:
+      $ref : "#/definitions/NotFoundMessage"
+  BadRequest:
+    description: Given request format is not same with expected format or validation failed
+    schema:
+      $ref: "#/definitions/ApiError"
+  
+  CreateCar:
+    description : car created message
+    schema:
+      $ref : "#/definitions/CreateCarMessage"
+  
+  Car:
+    description : Car details
+    schema :
+      $ref : "#/definitions/Car"
+  CarList:
+    description : Car list
+    schema:
+      $ref : "#/definitions/CarList"
+
+definitions:
+  
+  ApiError :
+    type: object
+    properties:
+      content:
+        type : string
+        example : JSONDecodeError
+  
+  NotFoundMessage:
+    type: string
+    example: Object with id 4 does not exist
+  
+  CreateCarMessage:
+    type: string
+    example :  {Car with id 1 : created}
+  
+  CarBrand:
+    type: object
+    properties:
+      id:
+        type : integer
+        description: uniq identifier
+        example : 3
+      name:
+        type: string
+        example: Toyota
+        
+        
+
+  CarModel:
+    type: object
+    properties:
+      id:
+        type : integer
+        description: uniq identifier
+        example : 2
+      name:
+        type: string
+        example : Corolla
+      year:
+        type: integer
+        example: 2021
+      seat_count:
+        type: integer
+        example: 4
+      car_class:
+        type: string
+        example: sedan
+      brand:
+        $ref: "#/definitions/CarBrand"
+        
+        
+  CarList:
+    type: array
+    items:
+      $ref : "#/definitions/Car"
+  Car:
+    type : object
+    properties:
+      id:
+        type : integer
+        description: uniq identifier
+        example : 7
+      transmission_type:
+        type: string
+        example: manuel
+      fuel type:
+        type : string 
+        example: gasoline
+      model:
+        $ref: "#/definitions/CarModel"
+        
+  Office:
+    type: object
+    properties:
+      country: 
+        type: string
+        example: Turkey
+      city: 
+        type: string
+        example: Istanbul
+      address:
+        type: string
+        example: Boğaziçi University First Boy Student Dormitory Bebek Mh. Şehitlik Dergahı sk. Beşiktaş
+  
+  MakeReservationRequest:
+    type: object
+    properties:
+      car:
+        type: integer
+        description: id of the car
+        example : 3
+      startDatetime:
+        type: string
+        format : date
+      endDatetime:
+        type: string
+        format : date
+      user:
+        type: integer
+        description: id of the user
+        example : 3
+        
+    required: 
+      - car
+      - start_datetime
+      - end_datetime
+      - user
+  
+  OfficeRequest:
+    type: object
+    properties: 
+      id: 
+        type: integer
+        example: 7
+      country: 
+        type: string
+        example: Turkey
+      city: 
+        type: string
+        example: Istanbul
+      address:
+        type: string
+        example: Boğaziçi University First Boy Student Dormitory Bebek Mh. Şehitlik Dergahı sk. Beşiktaş
+      
+      
+        
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+
+  

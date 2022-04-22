@@ -22,5 +22,6 @@ urlpatterns = [
     path("offices/", include("offices.urls")),
     path("availability/", include("availability.urls")),
     path("reservation/", include("reservation.urls")),
-    path("user/", include("user.urls"))
+    path("user/", include("user.urls")),
+    path('api-auth/', include('rest_framework.urls')),
 ]
